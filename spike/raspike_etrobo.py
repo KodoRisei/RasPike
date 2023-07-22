@@ -30,17 +30,27 @@ hub.display.show(hub.Image.ALL_CLOCKS,delay=400,clear=True,wait=False,loop=True,
 hub.motion.align_to_model(hub.FRONT,hub.TOP)
 hub.motion.yaw_pitch_roll(0)
 time.sleep(1)
+print("- reset gyro -")
 
 while True:
     motor_A = getattr(hub.port, port_map["motor_A"]).motor
+    # print(f"motor_A = {motor_A}")
     motor_B = getattr(hub.port, port_map["motor_B"]).motor
+    # print(f"motor_B = {motor_B}")
     motor_C = getattr(hub.port, port_map["motor_C"]).motor
+    # print(f"motor_C = {motor_C}")
     color_sensor = getattr(hub.port, port_map["color_sensor"]).device
+    # print(f"color_sensor = {color_sensor}")
     ultrasonic_sensor = getattr(hub.port, port_map["ultrasonic_sensor"]).device
+    # print(f"ultrasonic_sensor = {ultrasonic_sensor}")
     motor_rot_A = getattr(hub.port, port_map["motor_A"]).device
+    # print(f"motor_rot_A = {motor_rot_A}")
     motor_rot_B = getattr(hub.port, port_map["motor_B"]).device
+    # print(f"motor_rot_B = {motor_rot_B}")
     motor_rot_C = getattr(hub.port, port_map["motor_C"]).device
+    # print(f"motor_rot_C = {motor_rot_C}")
     touch_sensor = hub.button.connect
+    # print(f"touch_sensor = {touch_sensor}")
 
     if (
         motor_A is None
@@ -141,7 +151,7 @@ async def receiver():
                 cmd = int.from_bytes(await wait_read(ser, 1), "big")
                 if cmd & 0x80:
                     # Found Header
-                    #                print("Header Found")
+                    print("Header Found")
                     break
 
                 # Get ID
@@ -170,15 +180,16 @@ async def receiver():
 
                 break
 
-            #print('cmd=%d,value=%d' %(cmd_id,value))
+            print('[receiver]cmd=%d,value=%d' %(cmd_id,value))
             if value < -2048 or value > 2048:
-                #                print("Value is invalid")
+                print("Value is invalid")
                 num_fail = num_fail + 1
                 continue
 
             # 有効なコマンドを受け取った最後の時間
             last_command_time = time.ticks_us()
 
+            print("[receiver]cmd_id = {}".format(cmd_id))
             # 高速化のために、motorスピードを優先して判定する
             if cmd_id == 1:
                 motor_A.pwm(invert_A * value)
@@ -299,6 +310,7 @@ async def notifySensorValues():
 
 
 
+        print("[notify]color_sensor_mode = {}".format(color_sensor_mode))
         # カラーセンサーの切り替えがあった場合、タイミングによってはget()がNoneになったり、
         # RGBではない値が取れたりするので、その場合は次の周期で通知する
         if color_sensor_mode == 1:
@@ -319,6 +331,7 @@ async def notifySensorValues():
                 await send_data(3, color_val[0])
         elif color_sensor_mode == 4:
             color_val = color_sensor.get()
+            print("[notify]color_val = {}".format(color_val))
             if color_val[0] is not None and len(color_val) == 4 and color_val[2] is not None:
                 r = color_val[0]
                 g = color_val[1]
@@ -405,7 +418,7 @@ async def notifySensorValues():
                 await send_data(29,hub.battery.current())
             if ( (long_period_count) % 10 ) == 0:
                 await send_data(30,hub.battery.voltage())
-            
+
             #本体ボタン(100msec毎)
             button_command = 0
             if hub.button.left.is_pressed():
@@ -456,6 +469,7 @@ if True:
 
     print(" -- serial init -- ")
     ser = getattr(hub.port, spike_serial_port)
+    print("ser = {}".format(ser))
 
     ser.mode(hub.port.MODE_FULL_DUPLEX)
     time.sleep(1)
